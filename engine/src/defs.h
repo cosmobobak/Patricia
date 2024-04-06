@@ -1,12 +1,13 @@
 #pragma once
+#include <stdint.h>
+
 #include <chrono>
 #include <cinttypes>
-#include <stdint.h>
 
 namespace Colors {
 constexpr uint8_t White = 0;
 constexpr uint8_t Black = 1;
-}; // namespace Colors
+};  // namespace Colors
 namespace Pieces {
 constexpr uint8_t Blank = 0;
 constexpr uint8_t WPawn = 2;
@@ -21,7 +22,7 @@ constexpr uint8_t WQueen = 10;
 constexpr uint8_t BQueen = 11;
 constexpr uint8_t WKing = 12;
 constexpr uint8_t BKing = 13;
-}; // namespace Pieces
+};  // namespace Pieces
 namespace Directions {
 constexpr int8_t North = 16;
 constexpr int8_t South = -16;
@@ -31,25 +32,25 @@ constexpr int8_t Northeast = 17;
 constexpr int8_t Southeast = -15;
 constexpr int8_t Northwest = 15;
 constexpr int8_t Southwest = -17;
-} // namespace Directions
+}  // namespace Directions
 namespace Sides {
 constexpr int8_t Kingside = 1;
 constexpr int8_t Queenside = 0;
-} // namespace Sides
+}  // namespace Sides
 
 namespace EntryTypes {
 constexpr uint8_t None = 0;
 constexpr uint8_t UBound = 1;
 constexpr uint8_t LBound = 2;
 constexpr uint8_t Exact = 3;
-} // namespace EntryTypes
+}  // namespace EntryTypes
 
 namespace Promos {
 constexpr uint8_t Knight = 0;
 constexpr uint8_t Bishop = 1;
 constexpr uint8_t Rook = 2;
 constexpr uint8_t Queen = 3;
-} // namespace Promos
+}  // namespace Promos
 
 constexpr int16_t ListSize = 216;
 constexpr int16_t GameSize = 2000;
@@ -65,50 +66,51 @@ using Move = uint32_t;
 constexpr Move MoveNone = 0;
 
 struct MoveInfo {
-  std::array<Move, ListSize>  moves;
-  std::array<int , ListSize> scores;
+    std::array<Move, ListSize> moves;
+    std::array<int, ListSize> scores;
 };
 
 struct Position {
-    std::array<uint8_t, 0x80> board;       // Stores the board itself
-    std::array<uint8_t, 10> material_count;  // Stores material
+    std::array<uint8_t, 0x80> board;                     // Stores the board itself
+    std::array<uint8_t, 10> material_count;              // Stores material
     std::array<std::array<bool, 2>, 2> castling_rights;  // castling rights
-    std::array<uint8_t, 2> kingpos;          // Stores King positions
-    uint8_t ep_square;           // stores ep square
-    bool color;                  // whose side to move
+    std::array<uint8_t, 2> kingpos;                      // Stores King positions
+    uint8_t ep_square;                                   // stores ep square
+    bool color;                                          // whose side to move
     uint8_t halfmoves;
 };
 
-struct GameHistory { // keeps the state of the board at a particular point in
-                     // the game
-  uint64_t position_key; // Hash key of the position at the time
-  Move played_move;      // The move that was played
-  uint8_t piece_moved; // The piece that was moved (will be useful for histories
-                       // later)
-  int16_t sacrifice_scale;
-  bool is_cap;
-  int16_t m_diff;
+struct GameHistory {        // keeps the state of the board at a particular point in
+                            // the game
+    uint64_t position_key;  // Hash key of the position at the time
+    Move played_move;       // The move that was played
+    uint8_t piece_moved;    // The piece that was moved (will be useful for histories
+                            // later)
+    int16_t sacrifice_scale;
+    bool is_cap;
+    int16_t m_diff;
 };
 
 constexpr int MaxSearchDepth = 127;
 
 struct TTEntry {
-  uint32_t position_key; // The upper 32 bits of the hash key are stored
-  uint8_t depth;         // Depth that the entry was searched to
-  Move best_move;        // Best move in the position
-  int32_t score;         // Score of the position
-  uint8_t type;          // entry type
+    uint32_t position_key;  // The upper 32 bits of the hash key are stored
+    uint8_t depth;          // Depth that the entry was searched to
+    Move best_move;         // Best move in the position
+    int32_t score;          // Score of the position
+    uint8_t type;           // entry type
 };
 
 constexpr std::array<int, 64> StandardToMailbox =
-    { // Used to convert standard board position into mailbox position
-        0x0,  0x1,  0x2,  0x3,  0x4,  0x5,  0x6,  0x7,  0x10, 0x11, 0x12,
+    {  // Used to convert standard board position into mailbox position
+        0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x10, 0x11, 0x12,
         0x13, 0x14, 0x15, 0x16, 0x17, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25,
         0x26, 0x27, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x40,
         0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x50, 0x51, 0x52, 0x53,
         0x54, 0x55, 0x56, 0x57, 0x60, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66,
         0x67, 0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77};
 
+// clang-format off
 constexpr std::array<int, 0x80> MailboxToStandard_NNUE = {
     // Needed for NNUE inference because trainers use 0 = a8, while my board has
     // 0 = a1.
@@ -132,14 +134,15 @@ constexpr std::array<int, 0x80> MailboxToStandard = {
     99, 48, 49, 50, 51, 52, 53, 54, 55, 99, 99, 99, 99, 99, 99, 99, 99, 56, 57,
     58, 59, 60, 61, 62, 63, 99, 99, 99, 99, 99, 99, 99, 99,
 };
+// clang-format on
 
 constexpr std::array<int8_t, 8> AttackRays = {
-    Directions::East,      Directions::West, // Directions sliders can move in
-    Directions::South,     Directions::North,     Directions::Southeast,
+    Directions::East, Directions::West,  // Directions sliders can move in
+    Directions::South, Directions::North, Directions::Southeast,
     Directions::Southwest, Directions::Northeast, Directions::Northwest};
 
 constexpr std::array<int8_t, 8> KnightAttacks = {
-    Directions::East * 2 + Directions::North, // Directions Knights can move in
+    Directions::East * 2 + Directions::North,  // Directions Knights can move in
     Directions::East * 2 + Directions::South,
     Directions::South * 2 + Directions::East,
     Directions::South * 2 + Directions::West,
@@ -149,22 +152,21 @@ constexpr std::array<int8_t, 8> KnightAttacks = {
     Directions::North * 2 + Directions::East};
 
 constexpr std::array<std::array<int8_t, 8>, 4> SliderAttacks =
-    { // Attack vectors for bishops through kings
+    {  // Attack vectors for bishops through kings
         std::array<int8_t, 8>{Directions::Southeast, Directions::Southwest, Directions::Northeast,
-         Directions::Northwest},
+                              Directions::Northwest},
         std::array<int8_t, 8>{Directions::East, Directions::West, Directions::South,
-         Directions::North},
+                              Directions::North},
         std::array<int8_t, 8>{Directions::East, Directions::West, Directions::South,
-         Directions::North, Directions::Southeast, Directions::Southwest,
-         Directions::Northeast, Directions::Northwest},
+                              Directions::North, Directions::Southeast, Directions::Southwest,
+                              Directions::Northeast, Directions::Northwest},
         std::array<int8_t, 8>{Directions::East, Directions::West, Directions::South,
-         Directions::North, Directions::Southeast, Directions::Southwest,
-         Directions::Northeast, Directions::Northwest}
-};
+                              Directions::North, Directions::Southeast, Directions::Southwest,
+                              Directions::Northeast, Directions::Northwest}};
 
 constexpr std::array<int, 14> SeeValues = {
-    0,   0,   100, 100,  450,  450,   450,
-    450, 650, 650, 1250, 1250, 10000, 10000}; // SEE values for different pieces
+    0, 0, 100, 100, 450, 450, 450,
+    450, 650, 650, 1250, 1250, 10000, 10000};  // SEE values for different pieces
 
 // Simple one liners
 #define out_of_board(x) (x & 0x88)
@@ -185,7 +187,7 @@ constexpr std::array<int, 14> SeeValues = {
 constexpr int32_t side_index = 772;
 constexpr int32_t ep_index = 773;
 constexpr int32_t castling_index = 774;
-
+// clang-format off
 constexpr std::array<uint64_t, 778> zobrist_keys = {
     // Zobrist hash keys taken from Willow.
     // Their usage:

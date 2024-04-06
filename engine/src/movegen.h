@@ -1,7 +1,8 @@
 #pragma once
+#include <stdint.h>
+
 #include "defs.h"
 #include "position.h"
-#include <stdint.h>
 
 constexpr int TTMoveScore = 10000000;
 constexpr int QueenPromoScore = 5000000;
@@ -241,44 +242,43 @@ auto SEE(Position& position, Move move, int threshold) -> bool {
     return true;
 }
 
-void score_moves(Position position, ThreadInfo &thread_info,
-                 MoveInfo &scored_moves, Move tt_move, int len) {
+void score_moves(Position position, ThreadInfo& thread_info,
+                 MoveInfo& scored_moves, Move tt_move, int len) {
+    // score the moves
 
-  // score the moves
+    for (int indx = 0; indx < len; indx++) {
+        Move move = scored_moves.moves[indx];
+        if (move == tt_move) {
+            scored_moves.scores[indx] = TTMoveScore;
+            // TT move score;
+        }
 
-  for (int indx = 0; indx < len; indx++) {
-    Move move = scored_moves.moves[indx];
-    if (move == tt_move) {
-      scored_moves.scores[indx] = TTMoveScore;
-      // TT move score;
+        else if (extract_promo(move) == Promos::Queen) {
+            // Queen promo score
+            scored_moves.scores[indx] = QueenPromoScore;
+        }
+
+        else if (is_cap(position, move)) {
+            // Capture score
+            int from_piece = position.board[extract_from(move)],
+                to_piece = position.board[extract_to(move)];
+
+            scored_moves.scores[indx] = GoodCaptureBaseScore + SeeValues[to_piece] -
+                                        SeeValues[from_piece] / 20 -
+                                        5000 * !SEE(position, move, 0);
+        }
+
+        else if (move == thread_info.KillerMoves[thread_info.search_ply]) {
+            // Killer move score
+            scored_moves.scores[indx] = KillerMoveScore;
+        }
+
+        else {
+            // Normal moves are scored using history
+            int piece = position.board[extract_from(move)] - 2, to = extract_to(move);
+            scored_moves.scores[indx] = thread_info.HistoryScores[piece][to];
+        }
     }
-
-    else if (extract_promo(move) == Promos::Queen) {
-      // Queen promo score
-      scored_moves.scores[indx] = QueenPromoScore;
-    }
-
-    else if (is_cap(position, move)) {
-      // Capture score
-      int from_piece = position.board[extract_from(move)],
-          to_piece = position.board[extract_to(move)];
-
-      scored_moves.scores[indx] = GoodCaptureBaseScore + SeeValues[to_piece] -
-                                  SeeValues[from_piece] / 20 -
-                                  5000 * !SEE(position, move, 0);
-    }
-
-    else if (move == thread_info.KillerMoves[thread_info.search_ply]) {
-      // Killer move score
-      scored_moves.scores[indx] = KillerMoveScore;
-    }
-
-    else {
-      // Normal moves are scored using history
-      int piece = position.board[extract_from(move)] - 2, to = extract_to(move);
-      scored_moves.scores[indx] = thread_info.HistoryScores[piece][to];
-    }
-  }
 }
 
 auto get_next_move(std::array<Move, 216UL>& moves, std::array<int, 216UL>& scores, int start_indx, int len) -> Move {

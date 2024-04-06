@@ -1,13 +1,14 @@
 #pragma once
+#include <algorithm>
+
 #include "movegen.h"
 #include "nnue.h"
 #include "params.h"
 #include "position.h"
 #include "utils.h"
-#include <algorithm>
 
-void update_history(int16_t &entry, int score) { // Update history score
-  entry += score - entry * abs(score) / 16384;
+void update_history(int16_t& entry, int score) {  // Update history score
+    entry += score - entry * abs(score) / 16384;
 }
 
 auto out_of_time(ThreadInfo& thread_info) -> bool {
@@ -306,24 +307,24 @@ auto eval(Position& position, ThreadInfo& thread_info, int alpha, int beta) -> i
            768 * 75 / std::clamp(static_cast<int>(thread_info.game_ply), 50, 100);
 }
 
-void ss_push(Position &position, ThreadInfo &thread_info, Move move,
+void ss_push(Position& position, ThreadInfo& thread_info, Move move,
              uint64_t hash, int16_t s) {
-  // update search stack after makemove
-  thread_info.search_ply++;
-  thread_info.game_hist[thread_info.game_ply++] = {
-      hash,
-      move,
-      position.board[extract_from(move)],
-      s,
-      is_cap(position, move),
-      material_eval(position)};
+    // update search stack after makemove
+    thread_info.search_ply++;
+    thread_info.game_hist[thread_info.game_ply++] = {
+        hash,
+        move,
+        position.board[extract_from(move)],
+        s,
+        is_cap(position, move),
+        material_eval(position)};
 }
 
-void ss_pop(ThreadInfo &thread_info, uint64_t hash) {
-  // associated with unmake
-  thread_info.search_ply--, thread_info.game_ply--;
-  thread_info.zobrist_key = hash;
-  thread_info.nnue_state.pop();
+void ss_pop(ThreadInfo& thread_info, uint64_t hash) {
+    // associated with unmake
+    thread_info.search_ply--, thread_info.game_ply--;
+    thread_info.zobrist_key = hash;
+    thread_info.nnue_state.pop();
 }
 
 auto material_draw(Position& position) -> bool {  // Is there not enough material on the
@@ -787,57 +788,56 @@ auto search(int alpha, int beta, int depth, Position& position,
 }
 
 void iterative_deepen(
-    Position &position,
-    ThreadInfo &thread_info) { // Performs an iterative deepening search.
+    Position& position,
+    ThreadInfo& thread_info) {  // Performs an iterative deepening search.
 
-  thread_info.nnue_state.reset_nnue(position);
-  thread_info.zobrist_key = calculate(position);
-  thread_info.nodes = 0;
-  thread_info.time_checks = 0;
-  thread_info.stop = false;
-  thread_info.search_ply = 0; // reset all relevant thread_info
-  thread_info.KillerMoves = { 0 };
+    thread_info.nnue_state.reset_nnue(position);
+    thread_info.zobrist_key = calculate(position);
+    thread_info.nodes = 0;
+    thread_info.time_checks = 0;
+    thread_info.stop = false;
+    thread_info.search_ply = 0;  // reset all relevant thread_info
+    thread_info.KillerMoves = {0};
 
-  Move best_move = MoveNone;
-  int alpha = ScoreNone, beta = -ScoreNone;
+    Move best_move = MoveNone;
+    int alpha = ScoreNone, beta = -ScoreNone;
 
-  for (int depth = 1; depth <= thread_info.max_iter_depth; depth++) {
+    for (int depth = 1; depth <= thread_info.max_iter_depth; depth++) {
+        int score, delta = 20;
 
-    int score, delta = 20;
+        score = search(alpha, beta, depth, position, thread_info);
 
-    score = search(alpha, beta, depth, position, thread_info);
+        // Aspiration Windows: We search the position with a narrow window around
+        // the last search score in order to get cutoffs faster. If our search lands
+        // outside the bounds, expand them and try again.
 
-    // Aspiration Windows: We search the position with a narrow window around
-    // the last search score in order to get cutoffs faster. If our search lands
-    // outside the bounds, expand them and try again.
+        while (score <= alpha || score >= beta || thread_info.stop) {
+            if (thread_info.stop) {
+                printf("bestmove %s\n", internal_to_uci(position, best_move).c_str());
+                return;
+            }
+            alpha -= delta, beta += delta, delta = delta * 3 / 2;
+            score = search(alpha, beta, depth, position, thread_info);
+        }
 
-    while (score <= alpha || score >= beta || thread_info.stop) {
-      if (thread_info.stop) {
-        printf("bestmove %s\n", internal_to_uci(position, best_move).c_str());
-        return;
-      }
-      alpha -= delta, beta += delta, delta = delta * 3 / 2;
-      score = search(alpha, beta, depth, position, thread_info);
+        int64_t search_time = time_elapsed(thread_info.start_time);
+        best_move = TT[thread_info.zobrist_key & TT_mask].best_move;
+
+        printf("info depth %i seldepth %i score cp %i nodes %" PRIu64
+               " time %" PRIi64 " pv %s\n",
+               depth, depth, score, thread_info.nodes, search_time,
+               internal_to_uci(position, best_move).c_str());
+        if (search_time > thread_info.opt_time) {
+            break;
+        }
+
+        if (thread_info.stop) {
+            break;
+        }
+
+        if (depth > 6) {
+            alpha = score - 20, beta = score + 20;
+        }
     }
-
-    int64_t search_time = time_elapsed(thread_info.start_time);
-    best_move = TT[thread_info.zobrist_key & TT_mask].best_move;
-
-    printf("info depth %i seldepth %i score cp %i nodes %" PRIu64
-           " time %" PRIi64 " pv %s\n",
-           depth, depth, score, thread_info.nodes, search_time,
-           internal_to_uci(position, best_move).c_str());
-    if (search_time > thread_info.opt_time) {
-      break;
-    }
-
-    if (thread_info.stop) {
-      break;
-    }
-
-    if (depth > 6) {
-      alpha = score - 20, beta = score + 20;
-    }
-  }
-  printf("bestmove %s\n", internal_to_uci(position, best_move).c_str());
+    printf("bestmove %s\n", internal_to_uci(position, best_move).c_str());
 }

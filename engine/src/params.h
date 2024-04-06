@@ -1,6 +1,7 @@
 #pragma once
-#include "defs.h"
 #include <math.h>
+
+#include "defs.h"
 constexpr int NMPMinDepth = 3;
 constexpr int NMPBase = 3;
 constexpr int NMPDepthDiv = 6;
@@ -15,12 +16,12 @@ constexpr int SEDoubleExtMargin = 20;
 constexpr int FPDepth = 8;
 constexpr int IIRMinDepth = 3;
 
-std::array<std::array<int, ListSize>, MaxSearchDepth> LMRTable;
+std::array<std::array<int, ListSize>, MaxSearchDepth> LMRTable = { 0 };
 
 void init_LMR() {
-  for (int i = 0; i < MaxSearchDepth; i++) {
-    for (int n = 0; n < ListSize; n++) {
-      LMRTable[i][n] = LMRBase / 10.0 + log(i) * log(n) / (LMRRatio / 10.0);
+    for (int i = 1; i < MaxSearchDepth; i++) {
+        for (int n = 1; n < ListSize; n++) {
+            LMRTable[i][n] = LMRBase / 10.0 + log(i) * log(n) / (LMRRatio / 10.0);
+        }
     }
-  }
 }

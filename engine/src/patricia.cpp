@@ -1,10 +1,11 @@
+#include <array>
+#include <cstdio>
+#include <memory>
+
 #include "params.h"
 #include "position.h"
 #include "search.h"
 #include "uci.h"
-#include <memory>
-#include <cstdio>
-#include <array>
 
 auto perft(int depth, Position position, bool first,
            ThreadInfo& thread_info) -> uint64_t  // Performs a perft search to the desired depth,
@@ -45,26 +46,26 @@ auto perft(int depth, Position position, bool first,
     return l;
 }
 
-void bench(Position &position, ThreadInfo &thread_info) {
-  std::vector<std::string> fens = {
-      "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"};
+void bench(Position& position, ThreadInfo& thread_info) {
+    std::vector<std::string> fens = {
+        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"};
 
-  thread_info.max_time = 100000000, thread_info.opt_time = 100000000;
-  thread_info.max_iter_depth = 12;
-  uint64_t total_nodes = 0;
+    thread_info.max_time = 100000000, thread_info.opt_time = 100000000;
+    thread_info.max_iter_depth = 12;
+    uint64_t total_nodes = 0;
 
-  thread_info.start_time = std::chrono::steady_clock::now();
+    thread_info.start_time = std::chrono::steady_clock::now();
 
-  for (std::string fen : fens) {
-    new_game(thread_info);
-    set_board(position, thread_info, fen);
-    iterative_deepen(position, thread_info);
-    total_nodes += thread_info.nodes;
-  }
+    for (std::string fen : fens) {
+        new_game(thread_info);
+        set_board(position, thread_info, fen);
+        iterative_deepen(position, thread_info);
+        total_nodes += thread_info.nodes;
+    }
 
-  printf("Bench: %" PRIu64 " nodes %" PRIi64 " nps\n", total_nodes,
-         (int64_t)(total_nodes * 1000 / time_elapsed(thread_info.start_time)));
-}
+    printf("Bench: %" PRIu64 " nodes %" PRIi64 " nps\n", total_nodes,
+           (int64_t)(total_nodes * 1000 / time_elapsed(thread_info.start_time)));
+}s
 
 auto main(int argc, char* argv[]) -> int {
     Position position;

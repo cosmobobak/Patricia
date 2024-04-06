@@ -1,11 +1,12 @@
 #pragma once
-#include "defs.h"
 #include <algorithm>
 #include <array>
 #include <cstdint>
 #include <cstring>
 #include <span>
 #include <vector>
+
+#include "defs.h"
 #ifdef _MSC_VER
 #define W_MSVC
 #pragma push_macro("_MSC_VER")
@@ -34,23 +35,24 @@ constexpr int QB = 64;
 constexpr int QAB = QA * QB;
 
 struct alignas(64) NNUE_Params {
-  std::array<int16_t, INPUT_SIZE * LAYER1_SIZE> feature_weights;
-  std::array<int16_t, LAYER1_SIZE> feature_bias;
-  std::array<int16_t, LAYER1_SIZE * 2> output_weights;
-  int16_t output_bias;
+    std::array<int16_t, INPUT_SIZE * LAYER1_SIZE> feature_weights;
+    std::array<int16_t, LAYER1_SIZE> feature_bias;
+    std::array<int16_t, LAYER1_SIZE * 2> output_weights;
+    int16_t output_bias;
 };
 
 INCBIN(nnue, "src/lily.nnue");
-const NNUE_Params &g_nnue = *reinterpret_cast<const NNUE_Params *>(g_nnueData);
+const NNUE_Params& g_nnue = *reinterpret_cast<const NNUE_Params*>(g_nnueData);
 
-template <size_t HiddenSize> struct alignas(64) Accumulator {
-  std::array<int16_t, HiddenSize> white;
-  std::array<int16_t, HiddenSize> black;
+template <size_t HiddenSize>
+struct alignas(64) Accumulator {
+    std::array<int16_t, HiddenSize> white;
+    std::array<int16_t, HiddenSize> black;
 
-  inline void init(std::span<const int16_t, HiddenSize> bias) {
-    std::memcpy(white.data(), bias.data(), bias.size_bytes());
-    std::memcpy(black.data(), bias.data(), bias.size_bytes());
-  }
+    inline void init(std::span<const int16_t, HiddenSize> bias) {
+        std::memcpy(white.data(), bias.data(), bias.size_bytes());
+        std::memcpy(black.data(), bias.data(), bias.size_bytes());
+    }
 };
 
 constexpr auto crelu(int16_t x) -> int32_t {
@@ -60,21 +62,21 @@ constexpr auto crelu(int16_t x) -> int32_t {
 }
 
 template <size_t size, size_t weights>
-inline void add_to_all(std::array<int16_t, size> &input,
-                       const std::array<int16_t, weights> &delta,
+inline void add_to_all(std::array<int16_t, size>& input,
+                       const std::array<int16_t, weights>& delta,
                        size_t offset) {
-  for (size_t i = 0; i < size; ++i) {
-    input[i] += delta[offset + i];
-  }
+    for (size_t i = 0; i < size; ++i) {
+        input[i] += delta[offset + i];
+    }
 }
 
 template <size_t size, size_t weights>
-inline void subtract_from_all(std::array<int16_t, size> &input,
-                              const std::array<int16_t, weights> &delta,
-                              size_t offset) {
-  for (size_t i = 0; i < size; ++i) {
-    input[i] -= delta[offset + i];
-  }
+inline void sub_from_all(std::array<int16_t, size>& input,
+                         const std::array<int16_t, weights>& delta,
+                         size_t offset) {
+    for (size_t i = 0; i < size; ++i) {
+        input[i] -= delta[offset + i];
+    }
 }
 
 auto feature_indices(int piece, int sq) -> std::pair<size_t, size_t> {
@@ -106,26 +108,27 @@ auto crelu_flatten(const std::array<int16_t, LAYER1_SIZE>& us,
 }
 
 class NNUE_State {
-public:
-  std::vector<Accumulator<LAYER1_SIZE>> m_accumulator_stack{};
-  Accumulator<LAYER1_SIZE> *m_curr{};
+   public:
+    std::vector<Accumulator<LAYER1_SIZE>> m_accumulator_stack{};
+    Accumulator<LAYER1_SIZE>* m_curr{};
 
-  void push();
-  void pop();
-  auto evaluate(int color) -> int;
-  void reset_nnue(Position position);
+    void push();
+    void pop();
+    auto evaluate(int color) -> int;
+    void reset_nnue(Position position);
 
-  template <bool Activate> inline void update_feature(int piece, int square);
+    template <bool Activate>
+    inline void update_feature(int piece, int square);
 };
 
 void NNUE_State::push() {
-  m_accumulator_stack.push_back(*m_curr);
-  m_curr = &m_accumulator_stack.back();
+    m_accumulator_stack.push_back(*m_curr);
+    m_curr = &m_accumulator_stack.back();
 }
 
 void NNUE_State::pop() {
-  m_accumulator_stack.pop_back();
-  m_curr = &m_accumulator_stack.back();
+    m_accumulator_stack.pop_back();
+    m_curr = &m_accumulator_stack.back();
 }
 
 auto NNUE_State::evaluate(int color) -> int {
@@ -138,29 +141,29 @@ auto NNUE_State::evaluate(int color) -> int {
 
 template <bool Activate>
 inline void NNUE_State::update_feature(int piece, int square) {
-  const auto [white_idx, black_idx] = feature_indices(piece, square);
+    const auto [white_idx, black_idx] = feature_indices(piece, square);
 
-  if constexpr (Activate) {
-    add_to_all(m_curr->white, g_nnue.feature_weights, white_idx * LAYER1_SIZE);
-    add_to_all(m_curr->black, g_nnue.feature_weights, black_idx * LAYER1_SIZE);
-  } else {
-    subtract_from_all(m_curr->white, g_nnue.feature_weights,
-                      white_idx * LAYER1_SIZE);
-    subtract_from_all(m_curr->black, g_nnue.feature_weights,
-                      black_idx * LAYER1_SIZE);
-  }
+    if constexpr (Activate) {
+        add_to_all(m_curr->white, g_nnue.feature_weights, white_idx * LAYER1_SIZE);
+        add_to_all(m_curr->black, g_nnue.feature_weights, black_idx * LAYER1_SIZE);
+    } else {
+        sub_from_all(m_curr->white, g_nnue.feature_weights,
+                     white_idx * LAYER1_SIZE);
+        sub_from_all(m_curr->black, g_nnue.feature_weights,
+                     black_idx * LAYER1_SIZE);
+    }
 }
 
 void NNUE_State::reset_nnue(Position position) {
-  m_accumulator_stack.clear();
-  m_curr = &m_accumulator_stack.emplace_back();
+    m_accumulator_stack.clear();
+    m_curr = &m_accumulator_stack.emplace_back();
 
-  m_curr->init(g_nnue.feature_bias);
+    m_curr->init(g_nnue.feature_bias);
 
-  for (int square : StandardToMailbox) {
-    if (position.board[square]) {
-      update_feature<true>(position.board[square],
-                           MailboxToStandard_NNUE[square]);
+    for (int square : StandardToMailbox) {
+        if (position.board[square]) {
+            update_feature<true>(position.board[square],
+                                 MailboxToStandard_NNUE[square]);
+        }
     }
-  }
 }

@@ -1,8 +1,10 @@
 #pragma once
-#include "utils.h"
-#include <cstring>
 #include <ctype.h>
+
+#include <cstring>
 #include <sstream>
+
+#include "utils.h"
 
 auto internal_to_uci(Position position,
                      Move move) -> std::string {  // Converts an internal move into a uci move.
@@ -33,168 +35,167 @@ auto uci_to_internal(std::string uci) -> Move {
 }
 
 void print_board(
-    Position position) { // Prints the board. Very helpful for debugging.
-  for (int i = 0x70; i >= 0;) {
-    printf("+---+---+---+---+---+---+---+---+\n");
-    for (int n = i; n != i + 8; n++) {
-      printf("| ");
-      if (position.board[n] == Pieces::Blank) {
-        printf("  ");
-      } else {
-
-        switch (position.board[n]) {
-        case Pieces::WPawn:
-          printf("P ");
-          break;
-        case Pieces::WKnight:
-          printf("N ");
-          break;
-        case Pieces::WBishop:
-          printf("B ");
-          break;
-        case Pieces::WRook:
-          printf("R ");
-          break;
-        case Pieces::WQueen:
-          printf("Q ");
-          break;
-        case Pieces::WKing:
-          printf("K ");
-          break;
-        case Pieces::BPawn:
-          printf("p ");
-          break;
-        case Pieces::BKnight:
-          printf("n ");
-          break;
-        case Pieces::BBishop:
-          printf("b ");
-          break;
-        case Pieces::BRook:
-          printf("r ");
-          break;
-        case Pieces::BQueen:
-          printf("q ");
-          break;
-        case Pieces::BKing:
-          printf("k ");
-          break;
-        default:
-          printf("# ");
+    Position position) {  // Prints the board. Very helpful for debugging.
+    for (int i = 0x70; i >= 0;) {
+        printf("+---+---+---+---+---+---+---+---+\n");
+        for (int n = i; n != i + 8; n++) {
+            printf("| ");
+            if (position.board[n] == Pieces::Blank) {
+                printf("  ");
+            } else {
+                switch (position.board[n]) {
+                    case Pieces::WPawn:
+                        printf("P ");
+                        break;
+                    case Pieces::WKnight:
+                        printf("N ");
+                        break;
+                    case Pieces::WBishop:
+                        printf("B ");
+                        break;
+                    case Pieces::WRook:
+                        printf("R ");
+                        break;
+                    case Pieces::WQueen:
+                        printf("Q ");
+                        break;
+                    case Pieces::WKing:
+                        printf("K ");
+                        break;
+                    case Pieces::BPawn:
+                        printf("p ");
+                        break;
+                    case Pieces::BKnight:
+                        printf("n ");
+                        break;
+                    case Pieces::BBishop:
+                        printf("b ");
+                        break;
+                    case Pieces::BRook:
+                        printf("r ");
+                        break;
+                    case Pieces::BQueen:
+                        printf("q ");
+                        break;
+                    case Pieces::BKing:
+                        printf("k ");
+                        break;
+                    default:
+                        printf("# ");
+                }
+            }
         }
-      }
+        printf("|\n");
+        i -= 0x10;
     }
-    printf("|\n");
-    i -= 0x10;
-  }
-  printf("+---+---+---+---+---+---+---+---+\n\n");
+    printf("+---+---+---+---+---+---+---+---+\n\n");
 }
 
-void set_board(Position &position, ThreadInfo &thread_info,
-               std::string f) { // Sets the board to a given fen.
-  memset(&position, 0, sizeof(Position));
-  std::istringstream fen(f);
-  std::string fen_pos;
-  fen >> fen_pos;
-  int indx = 0;
-  for (int i = 0x70; i >= 0 && fen_pos[indx] != '\0'; i++, indx++) {
-    if (fen_pos[indx] == '/') {
-      i -= 0x19; // the '/' denotes that we've reached the end of the file. If
-                 // we're on the second file, our index is going to be 0x18.
-                 // This needs to be at 0 next iteration for the first rank to
-                 // be set up,
-                 // so we subtract 0x19 and then the loop adds 1.
-    } else if (isdigit(fen_pos[indx])) {
-      i += fen_pos[indx] - '1';
+void set_board(Position& position, ThreadInfo& thread_info,
+               std::string f) {  // Sets the board to a given fen.
+    memset(&position, 0, sizeof(Position));
+    std::istringstream fen(f);
+    std::string fen_pos;
+    fen >> fen_pos;
+    int indx = 0;
+    for (int i = 0x70; i >= 0 && fen_pos[indx] != '\0'; i++, indx++) {
+        if (fen_pos[indx] == '/') {
+            i -= 0x19;  // the '/' denotes that we've reached the end of the file. If
+                        // we're on the second file, our index is going to be 0x18.
+                        // This needs to be at 0 next iteration for the first rank to
+                        // be set up,
+                        // so we subtract 0x19 and then the loop adds 1.
+        } else if (isdigit(fen_pos[indx])) {
+            i += fen_pos[indx] - '1';
+        } else {
+            switch (fen_pos[indx]) {
+                case 'P':
+                    position.board[i] = Pieces::WPawn;
+                    position.material_count[0]++;
+                    break;
+                case 'N':
+                    position.board[i] = Pieces::WKnight;
+                    position.material_count[2]++;
+                    break;
+                case 'B':
+                    position.board[i] = Pieces::WBishop;
+                    position.material_count[4]++;
+                    break;
+                case 'R':
+                    position.board[i] = Pieces::WRook;
+                    position.material_count[6]++;
+                    break;
+                case 'Q':
+                    position.board[i] = Pieces::WQueen;
+                    position.material_count[8]++;
+                    break;
+                case 'K':
+                    position.board[i] = Pieces::WKing;
+                    position.kingpos[Colors::White] = i;
+                    break;
+                case 'p':
+                    position.board[i] = Pieces::BPawn;
+                    position.material_count[1]++;
+                    break;
+                case 'n':
+                    position.board[i] = Pieces::BKnight;
+                    position.material_count[3]++;
+                    break;
+                case 'b':
+                    position.board[i] = Pieces::BBishop;
+                    position.material_count[5]++;
+                    break;
+                case 'r':
+                    position.board[i] = Pieces::BRook;
+                    position.material_count[7]++;
+                    break;
+                case 'q':
+                    position.board[i] = Pieces::BQueen;
+                    position.material_count[9]++;
+                    break;
+                case 'k':
+                    position.board[i] = Pieces::BKing;
+                    position.kingpos[Colors::Black] = i;
+                    break;
+                default:
+                    printf("Error parsing FEN: %s\n", f.c_str());
+                    std::exit(1);
+            }
+        }
+    }
+
+    std::string color;
+    fen >> color;
+    if (color[0] == 'w') {  // Set color
+        position.color = Colors::White;
     } else {
-      switch (fen_pos[indx]) {
-      case 'P':
-        position.board[i] = Pieces::WPawn;
-        position.material_count[0]++;
-        break;
-      case 'N':
-        position.board[i] = Pieces::WKnight;
-        position.material_count[2]++;
-        break;
-      case 'B':
-        position.board[i] = Pieces::WBishop;
-        position.material_count[4]++;
-        break;
-      case 'R':
-        position.board[i] = Pieces::WRook;
-        position.material_count[6]++;
-        break;
-      case 'Q':
-        position.board[i] = Pieces::WQueen;
-        position.material_count[8]++;
-        break;
-      case 'K':
-        position.board[i] = Pieces::WKing;
-        position.kingpos[Colors::White] = i;
-        break;
-      case 'p':
-        position.board[i] = Pieces::BPawn;
-        position.material_count[1]++;
-        break;
-      case 'n':
-        position.board[i] = Pieces::BKnight;
-        position.material_count[3]++;
-        break;
-      case 'b':
-        position.board[i] = Pieces::BBishop;
-        position.material_count[5]++;
-        break;
-      case 'r':
-        position.board[i] = Pieces::BRook;
-        position.material_count[7]++;
-        break;
-      case 'q':
-        position.board[i] = Pieces::BQueen;
-        position.material_count[9]++;
-        break;
-      case 'k':
-        position.board[i] = Pieces::BKing;
-        position.kingpos[Colors::Black] = i;
-        break;
-      default:
-        printf("Error parsing FEN: %s\n", f.c_str());
-        std::exit(1);
-      }
+        position.color = Colors::Black;
     }
-  }
 
-  std::string color;
-  fen >> color;
-  if (color[0] == 'w') { // Set color
-    position.color = Colors::White;
-  } else {
-    position.color = Colors::Black;
-  }
+    std::string castling_rights;
+    fen >> castling_rights;
 
-  std::string castling_rights;
-  fen >> castling_rights;
-
-  indx = 0;
-  for (char rights : "KQkq") { // Set castling rights
-    if (castling_rights.find(rights) != std::string::npos) {
-      position.castling_rights[indx > 1][!(indx % 2)] = true;
+    indx = 0;
+    for (char rights : "KQkq") {  // Set castling rights
+        if (castling_rights.find(rights) != std::string::npos) {
+            position.castling_rights[indx > 1][!(indx % 2)] = true;
+        }
+        indx++;
     }
-    indx++;
-  }
 
-  std::string ep_square; // Set en passant square
-  fen >> ep_square;
-  if (ep_square[0] == '-') {
-    position.ep_square = 255;
-  } else {
-    uint8_t file = (ep_square[0] - 'a');
-    uint8_t rank = (ep_square[1] - '1');
-    position.ep_square = rank * 16 + file;
-  }
-  int halfmoves;
-  fen >> halfmoves;
-  position.halfmoves = halfmoves;
-  thread_info.game_ply = 0;
+    std::string ep_square;  // Set en passant square
+    fen >> ep_square;
+    if (ep_square[0] == '-') {
+        position.ep_square = 255;
+    } else {
+        uint8_t file = (ep_square[0] - 'a');
+        uint8_t rank = (ep_square[1] - '1');
+        position.ep_square = rank * 16 + file;
+    }
+    int halfmoves;
+    fen >> halfmoves;
+    position.halfmoves = halfmoves;
+    thread_info.game_ply = 0;
 }
 
 auto attacks_square(Position position, int sq,
@@ -255,61 +256,61 @@ auto is_cap(Position& position, Move move) -> bool {
             is_queen_promo((move)));
 }
 
-void update_nnue_state(NNUE_State &nnue_state, Move move,
-                       Position &position) { // Updates the nnue state
+void update_nnue_state(NNUE_State& nnue_state, Move move,
+                       Position& position) {  // Updates the nnue state
 
-  nnue_state.push();
+    nnue_state.push();
 
-  int from = extract_from(move), to = extract_to(move);
-  int from_piece = position.board[from];
-  int to_piece = from_piece, color = position.color;
+    int from = extract_from(move), to = extract_to(move);
+    int from_piece = position.board[from];
+    int to_piece = from_piece, color = position.color;
 
-  if (from_piece - color == Pieces::WPawn &&
-      get_rank(to) == (color ? 0 : 7)) { // Grab promos
+    if (from_piece - color == Pieces::WPawn &&
+        get_rank(to) == (color ? 0 : 7)) {  // Grab promos
 
-    to_piece = extract_promo(move) * 2 + 4 + color;
-  }
-
-  int captured_piece = Pieces::Blank, captured_square = 255;
-
-  if (position.board[to]) {
-    captured_piece = position.board[to], captured_square = to;
-  }
-  // en passant
-  else if (from_piece - color == Pieces::WPawn && to == position.ep_square) {
-    captured_square = to + (color ? Directions::North : Directions::South);
-    captured_piece = position.board[captured_square];
-  }
-
-  int to_square = to;
-  from = MailboxToStandard_NNUE[from], to = MailboxToStandard_NNUE[to];
-
-  nnue_state.update_feature<true>(to_piece, to); // update the piece that mpved
-  nnue_state.update_feature<false>(from_piece, from);
-
-  if (captured_piece) {
-    captured_square =
-        MailboxToStandard_NNUE[captured_square]; // update the piece that was
-                                                 // captured if applicable
-    nnue_state.update_feature<false>(captured_piece, captured_square);
-  }
-  if (from_piece - color == Pieces::WKing &&
-      abs(to - from) ==
-          Directions::East * 2) { // update the rook that moved if we castled
-
-    int indx = color ? 0x70 : 0;
-    if (get_file(to_square) > 4) {
-      nnue_state.update_feature<true>(Pieces::WRook + color,
-                                      MailboxToStandard_NNUE[indx + 5]);
-      nnue_state.update_feature<false>(Pieces::WRook + color,
-                                       MailboxToStandard_NNUE[indx + 7]);
-    } else {
-      nnue_state.update_feature<true>(Pieces::WRook + color,
-                                      MailboxToStandard_NNUE[indx + 3]);
-      nnue_state.update_feature<false>(Pieces::WRook + color,
-                                       MailboxToStandard_NNUE[indx]);
+        to_piece = extract_promo(move) * 2 + 4 + color;
     }
-  }
+
+    int captured_piece = Pieces::Blank, captured_square = 255;
+
+    if (position.board[to]) {
+        captured_piece = position.board[to], captured_square = to;
+    }
+    // en passant
+    else if (from_piece - color == Pieces::WPawn && to == position.ep_square) {
+        captured_square = to + (color ? Directions::North : Directions::South);
+        captured_piece = position.board[captured_square];
+    }
+
+    int to_square = to;
+    from = MailboxToStandard_NNUE[from], to = MailboxToStandard_NNUE[to];
+
+    nnue_state.update_feature<true>(to_piece, to);  // update the piece that mpved
+    nnue_state.update_feature<false>(from_piece, from);
+
+    if (captured_piece) {
+        captured_square =
+            MailboxToStandard_NNUE[captured_square];  // update the piece that was
+                                                      // captured if applicable
+        nnue_state.update_feature<false>(captured_piece, captured_square);
+    }
+    if (from_piece - color == Pieces::WKing &&
+        abs(to - from) ==
+            Directions::East * 2) {  // update the rook that moved if we castled
+
+        int indx = color ? 0x70 : 0;
+        if (get_file(to_square) > 4) {
+            nnue_state.update_feature<true>(Pieces::WRook + color,
+                                            MailboxToStandard_NNUE[indx + 5]);
+            nnue_state.update_feature<false>(Pieces::WRook + color,
+                                             MailboxToStandard_NNUE[indx + 7]);
+        } else {
+            nnue_state.update_feature<true>(Pieces::WRook + color,
+                                            MailboxToStandard_NNUE[indx + 3]);
+            nnue_state.update_feature<false>(Pieces::WRook + color,
+                                             MailboxToStandard_NNUE[indx]);
+        }
+    }
 }
 
 auto make_move(Position& position, Move move, ThreadInfo& thread_info,
