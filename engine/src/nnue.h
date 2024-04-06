@@ -42,7 +42,7 @@ struct alignas(64) NNUE_Params {
 };
 
 INCBIN(nnue, "src/lily.nnue");
-const NNUE_Params& g_nnue = *reinterpret_cast<const NNUE_Params*>(g_nnueData);
+const NNUE_Params g_nnue = *reinterpret_cast<const NNUE_Params*>(g_nnueData);
 
 template <size_t HiddenSize>
 struct alignas(64) Accumulator {
