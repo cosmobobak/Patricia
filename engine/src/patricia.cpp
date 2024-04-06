@@ -65,7 +65,7 @@ void bench(Position& position, ThreadInfo& thread_info) {
 
     printf("Bench: %" PRIu64 " nodes %" PRIi64 " nps\n", total_nodes,
            (int64_t)(total_nodes * 1000 / time_elapsed(thread_info.start_time)));
-}s
+}
 
 auto main(int argc, char* argv[]) -> int {
     Position position;
