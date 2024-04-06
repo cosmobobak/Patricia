@@ -56,7 +56,7 @@ constexpr int16_t GameSize = 2000;
 constexpr int32_t Mate = -100000;
 constexpr int32_t MateScore = 80000;
 constexpr int32_t ScoreNone = -200000;
-typedef uint32_t Move;
+using Move = uint32_t;
 /*The format of a move structure is:      from     to      promo
                                          (<< 10)  (<< 2)
                                         xxxxxxxx xxxxxxxx  xx
@@ -65,18 +65,18 @@ typedef uint32_t Move;
 constexpr Move MoveNone = 0;
 
 struct MoveInfo {
-  Move moves[ListSize];
-  int scores[ListSize];
+  std::array<Move, ListSize>  moves;
+  std::array<int , ListSize> scores;
 };
 
 struct Position {
-  uint8_t board[0x80];        // Stores the board itself
-  uint8_t material_count[10]; // Stores material
-  bool castling_rights[2][2]; // castling rights
-  uint8_t kingpos[2];         // Stores King positions
-  uint8_t ep_square;          // stores ep square
-  bool color;                 // whose side to move
-  uint8_t halfmoves;
+    std::array<uint8_t, 0x80> board;       // Stores the board itself
+    std::array<uint8_t, 10> material_count;  // Stores material
+    std::array<std::array<bool, 2>, 2> castling_rights;  // castling rights
+    std::array<uint8_t, 2> kingpos;          // Stores King positions
+    uint8_t ep_square;           // stores ep square
+    bool color;                  // whose side to move
+    uint8_t halfmoves;
 };
 
 struct GameHistory { // keeps the state of the board at a particular point in
@@ -100,7 +100,7 @@ struct TTEntry {
   uint8_t type;          // entry type
 };
 
-constexpr int StandardToMailbox[64] =
+constexpr std::array<int, 64> StandardToMailbox =
     { // Used to convert standard board position into mailbox position
         0x0,  0x1,  0x2,  0x3,  0x4,  0x5,  0x6,  0x7,  0x10, 0x11, 0x12,
         0x13, 0x14, 0x15, 0x16, 0x17, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25,
@@ -109,7 +109,7 @@ constexpr int StandardToMailbox[64] =
         0x54, 0x55, 0x56, 0x57, 0x60, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66,
         0x67, 0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77};
 
-constexpr int MailboxToStandard_NNUE[0x80] = {
+constexpr std::array<int, 0x80> MailboxToStandard_NNUE = {
     // Needed for NNUE inference because trainers use 0 = a8, while my board has
     // 0 = a1.
     56, 57, 58, 59, 60, 61, 62, 63, 99, 99, 99, 99, 99, 99, 99, 99, 48, 49, 50,
@@ -121,7 +121,7 @@ constexpr int MailboxToStandard_NNUE[0x80] = {
     2,  3,  4,  5,  6,  7,  99, 99, 99, 99, 99, 99, 99, 99,
 };
 
-constexpr int MailboxToStandard[0x80] = {
+constexpr std::array<int, 0x80> MailboxToStandard = {
     // Used to convert mailbox position into standard position, useful for hash
     // keys etc.
     0,  1,  2,  3,  4,  5,  6,  7,  99, 99, 99, 99, 99, 99, 99, 99, 8,  9,  10,
@@ -133,12 +133,12 @@ constexpr int MailboxToStandard[0x80] = {
     58, 59, 60, 61, 62, 63, 99, 99, 99, 99, 99, 99, 99, 99,
 };
 
-constexpr int8_t AttackRays[8] = {
+constexpr std::array<int8_t, 8> AttackRays = {
     Directions::East,      Directions::West, // Directions sliders can move in
     Directions::South,     Directions::North,     Directions::Southeast,
     Directions::Southwest, Directions::Northeast, Directions::Northwest};
 
-constexpr int8_t KnightAttacks[8] = {
+constexpr std::array<int8_t, 8> KnightAttacks = {
     Directions::East * 2 + Directions::North, // Directions Knights can move in
     Directions::East * 2 + Directions::South,
     Directions::South * 2 + Directions::East,
@@ -148,20 +148,21 @@ constexpr int8_t KnightAttacks[8] = {
     Directions::North * 2 + Directions::West,
     Directions::North * 2 + Directions::East};
 
-constexpr int8_t SliderAttacks[4][8] =
+constexpr std::array<std::array<int8_t, 8>, 4> SliderAttacks =
     { // Attack vectors for bishops through kings
-        {Directions::Southeast, Directions::Southwest, Directions::Northeast,
+        std::array<int8_t, 8>{Directions::Southeast, Directions::Southwest, Directions::Northeast,
          Directions::Northwest},
-        {Directions::East, Directions::West, Directions::South,
+        std::array<int8_t, 8>{Directions::East, Directions::West, Directions::South,
          Directions::North},
-        {Directions::East, Directions::West, Directions::South,
+        std::array<int8_t, 8>{Directions::East, Directions::West, Directions::South,
          Directions::North, Directions::Southeast, Directions::Southwest,
          Directions::Northeast, Directions::Northwest},
-        {Directions::East, Directions::West, Directions::South,
+        std::array<int8_t, 8>{Directions::East, Directions::West, Directions::South,
          Directions::North, Directions::Southeast, Directions::Southwest,
-         Directions::Northeast, Directions::Northwest}};
+         Directions::Northeast, Directions::Northwest}
+};
 
-constexpr int SeeValues[14] = {
+constexpr std::array<int, 14> SeeValues = {
     0,   0,   100, 100,  450,  450,   450,
     450, 650, 650, 1250, 1250, 10000, 10000}; // SEE values for different pieces
 
@@ -185,7 +186,7 @@ constexpr int32_t side_index = 772;
 constexpr int32_t ep_index = 773;
 constexpr int32_t castling_index = 774;
 
-constexpr uint64_t zobrist_keys[778] = {
+constexpr std::array<uint64_t, 778> zobrist_keys = {
     // Zobrist hash keys taken from Willow.
     // Their usage:
     // 64 * piece (0-11) + sq

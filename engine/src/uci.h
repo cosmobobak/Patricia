@@ -21,8 +21,8 @@ void run_thread(Position &position, ThreadInfo &thread_info) {
 }
 
 void uci(ThreadInfo &thread_info, Position &position) {
-  setvbuf(stdin, NULL, _IONBF, 0);
-  setvbuf(stdout, NULL, _IONBF, 0);
+  setvbuf(stdin, nullptr, _IONBF, 0);
+  setvbuf(stdout, nullptr, _IONBF, 0);
 
   printf("Patricia Chess Engine, written by Adam Kulju\n\n\n");
 

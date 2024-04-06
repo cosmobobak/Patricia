@@ -15,7 +15,7 @@ constexpr int SEDoubleExtMargin = 20;
 constexpr int FPDepth = 8;
 constexpr int IIRMinDepth = 3;
 
-int LMRTable[MaxSearchDepth][ListSize];
+std::array<std::array<int, ListSize>, MaxSearchDepth> LMRTable;
 
 void init_LMR() {
   for (int i = 0; i < MaxSearchDepth; i++) {

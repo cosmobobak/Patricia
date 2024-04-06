@@ -53,10 +53,10 @@ template <size_t HiddenSize> struct alignas(64) Accumulator {
   }
 };
 
-constexpr int32_t crelu(int16_t x) {
-  const auto clipped =
-      std::clamp(static_cast<int32_t>(x), CRELU_MIN, CRELU_MAX);
-  return clipped * clipped;
+constexpr auto crelu(int16_t x) -> int32_t {
+    const auto clipped =
+        std::clamp(static_cast<int32_t>(x), CRELU_MIN, CRELU_MAX);
+    return clipped * clipped;
 }
 
 template <size_t size, size_t weights>
@@ -77,32 +77,32 @@ inline void subtract_from_all(std::array<int16_t, size> &input,
   }
 }
 
-std::pair<size_t, size_t> feature_indices(int piece, int sq) {
-  constexpr size_t color_stride = 64 * 6;
-  constexpr size_t piece_stride = 64;
+auto feature_indices(int piece, int sq) -> std::pair<size_t, size_t> {
+    constexpr size_t color_stride = 64 * 6;
+    constexpr size_t piece_stride = 64;
 
-  const auto base = static_cast<int>(piece / 2 - 1);
-  const size_t color = piece & 1;
+    const auto base = static_cast<int>(piece / 2 - 1);
+    const size_t color = piece & 1;
 
-  const auto whiteIdx =
-      color * color_stride + base * piece_stride + static_cast<size_t>(sq ^ 56);
-  const auto blackIdx = (color ^ 1) * color_stride + base * piece_stride +
-                        (static_cast<size_t>(sq));
+    const auto whiteIdx =
+        color * color_stride + base * piece_stride + static_cast<size_t>(sq ^ 56);
+    const auto blackIdx = (color ^ 1) * color_stride + base * piece_stride +
+                          (static_cast<size_t>(sq));
 
-  return {whiteIdx, blackIdx};
+    return {whiteIdx, blackIdx};
 }
 
-int32_t crelu_flatten(const std::array<int16_t, LAYER1_SIZE> &us,
-                      const std::array<int16_t, LAYER1_SIZE> &them,
-                      const std::array<int16_t, LAYER1_SIZE * 2> &weights) {
-  int32_t sum = 0;
+auto crelu_flatten(const std::array<int16_t, LAYER1_SIZE>& us,
+                   const std::array<int16_t, LAYER1_SIZE>& them,
+                   const std::array<int16_t, LAYER1_SIZE * 2>& weights) -> int32_t {
+    int32_t sum = 0;
 
-  for (size_t i = 0; i < LAYER1_SIZE; ++i) {
-    sum += crelu(us[i]) * weights[i];
-    sum += crelu(them[i]) * weights[LAYER1_SIZE + i];
-  }
+    for (size_t i = 0; i < LAYER1_SIZE; ++i) {
+        sum += crelu(us[i]) * weights[i];
+        sum += crelu(them[i]) * weights[LAYER1_SIZE + i];
+    }
 
-  return sum / QA;
+    return sum / QA;
 }
 
 class NNUE_State {
@@ -112,7 +112,7 @@ public:
 
   void push();
   void pop();
-  int evaluate(int color);
+  auto evaluate(int color) -> int;
   void reset_nnue(Position position);
 
   template <bool Activate> inline void update_feature(int piece, int square);
@@ -128,12 +128,12 @@ void NNUE_State::pop() {
   m_curr = &m_accumulator_stack.back();
 }
 
-int NNUE_State::evaluate(int color) {
-  const auto output =
-      color == Colors::White
-          ? crelu_flatten(m_curr->white, m_curr->black, g_nnue.output_weights)
-          : crelu_flatten(m_curr->black, m_curr->white, g_nnue.output_weights);
-  return (output + g_nnue.output_bias) * SCALE / QAB;
+auto NNUE_State::evaluate(int color) -> int {
+    const auto output =
+        color == Colors::White
+            ? crelu_flatten(m_curr->white, m_curr->black, g_nnue.output_weights)
+            : crelu_flatten(m_curr->black, m_curr->white, g_nnue.output_weights);
+    return (output + g_nnue.output_bias) * SCALE / QAB;
 }
 
 template <bool Activate>

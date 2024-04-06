@@ -6,7 +6,7 @@
 struct ThreadInfo {
   uint64_t zobrist_key; // hash key of the position we're currently on
   uint16_t thread_id;   // ID of the thread
-  GameHistory game_hist[GameSize]; // all positions from earlier in the game
+  std::array<GameHistory, GameSize> game_hist;  // all positions from earlier in the game
   uint16_t game_ply;               // how far we're into the game
   uint16_t search_ply;             // depth that we are in the search tree
   uint64_t nodes;                  // Total nodes searched so far this search
@@ -17,9 +17,9 @@ struct ThreadInfo {
   uint16_t time_checks;
   bool stop;
   NNUE_State nnue_state;
-  int16_t HistoryScores[12][0x80];
+  std::array<std::array<int16_t, 0x80>, 12> HistoryScores;
   uint8_t current_iter;
-  Move KillerMoves[MaxSearchDepth + 1];
+  std::array<Move, MaxSearchDepth + 1> KillerMoves;
   Move excluded_move;
 
   uint8_t max_iter_depth = MaxSearchDepth;
@@ -33,8 +33,8 @@ void new_game(ThreadInfo &thread_info) {
   // Reset TT and other thread_info values for a new game
 
   thread_info.game_ply = 0;
-  memset(thread_info.HistoryScores, 0, sizeof(thread_info.HistoryScores));
-  memset(thread_info.game_hist, 0, sizeof(thread_info.game_hist));
+  thread_info.HistoryScores = { 0 };
+  thread_info.game_hist = { 0 };
   memset(&TT[0], 0, TT_size * sizeof(TT[0]));
 }
 
@@ -61,35 +61,35 @@ void insert_entry(
   TT[indx].best_move = best_move;
 }
 
-uint64_t calculate(
-    Position position) { // Calculates the zobrist key of a given position.
-                         // Useful when initializing positions, in search though
-                         // incremental updates are faster.
-  uint64_t hash = 0;
-  for (int indx : StandardToMailbox) {
-    int piece = position.board[indx];
-    if (piece) {
-      hash ^= zobrist_keys[get_zobrist_key(piece, standard(indx))];
+auto calculate(
+    Position position) -> uint64_t {  // Calculates the zobrist key of a given position.
+                                      // Useful when initializing positions, in search though
+                                      // incremental updates are faster.
+    uint64_t hash = 0;
+    for (int indx : StandardToMailbox) {
+        int piece = position.board[indx];
+        if (piece) {
+            hash ^= zobrist_keys[get_zobrist_key(piece, standard(indx))];
+        }
     }
-  }
-  if (position.color) {
-    hash ^= zobrist_keys[side_index];
-  }
-  if (position.ep_square != 255) {
-    hash ^= zobrist_keys[ep_index];
-  }
-  for (int indx = castling_index; indx < 778; indx++) {
-    if (position.castling_rights[indx > 775][(indx & 1)]) {
-      hash ^= zobrist_keys[indx];
+    if (position.color) {
+        hash ^= zobrist_keys[side_index];
     }
-  }
-  return hash;
+    if (position.ep_square != 255) {
+        hash ^= zobrist_keys[ep_index];
+    }
+    for (int indx = castling_index; indx < 778; indx++) {
+        if (position.castling_rights[indx > 775][(indx & 1)]) {
+            hash ^= zobrist_keys[indx];
+        }
+    }
+    return hash;
 }
 
-int64_t time_elapsed(std::chrono::steady_clock::time_point start_time) {
-  // get the time that has elapsed since the start of search
+auto time_elapsed(std::chrono::steady_clock::time_point start_time) -> int64_t {
+    // get the time that has elapsed since the start of search
 
-  auto now = std::chrono::steady_clock::now();
-  return std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time)
-      .count();
+    auto now = std::chrono::steady_clock::now();
+    return std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time)
+        .count();
 }
